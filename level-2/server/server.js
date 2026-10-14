@@ -1,7 +1,12 @@
+require('dotenv').config();
+
 const mongoose = require('mongoose');
 const express = require('express');
 const Product = require('./models/Product');
 const Category = require('./models/Category');
+const cookieParser = require('cookie-parser');
+const authRoutes = require('./routes/auth');
+const { protect, restrictTo } = require('./middleware/auth');
 
 mongoose
   .connect('mongodb://127.0.0.1:27017/codveda_store')
@@ -9,7 +14,10 @@ mongoose
   .catch(err => console.error('MongoDB connection error:', err.message));
 
 const app = express();
+app.disable('x-powered-by');
 app.use(express.json());
+app.use(cookieParser());
+app.use('/auth', authRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API is running' });
@@ -25,7 +33,7 @@ app.get('/categories', async (req, res, next) => {
   }
 });
 
-app.post('/categories', async (req, res, next) => {
+app.post('/categories', protect, restrictTo('admin'), async (req, res, next) => {
   try {
     const category = await Category.create({ name: req.body.name });
     res.status(201).json(category);
@@ -60,7 +68,7 @@ app.get('/products/:id', async (req, res, next) => {
   }
 });
 
-app.post('/products', async (req, res, next) => {
+app.post('/products', protect, async (req, res, next) => {
   try {
     const { name, price, category } = req.body;
     const product = await Product.create({ name, price, category });
@@ -71,7 +79,7 @@ app.post('/products', async (req, res, next) => {
   }
 });
 
-app.put('/products/:id', async (req, res, next) => {
+app.put('/products/:id', protect, async (req, res, next) => {
   try {
     const updates = {};
     ['name', 'price', 'category'].forEach(field => {
@@ -93,7 +101,7 @@ app.put('/products/:id', async (req, res, next) => {
   }
 });
 
-app.delete('/products/:id', async (req, res, next) => {
+app.delete('/products/:id', protect, restrictTo('admin'), async (req, res, next) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
 
@@ -123,7 +131,8 @@ app.use((err, req, res, next) => {
   }
 
   if (err.code === 11000) {
-    return res.status(409).json({ message: 'That name already exists' });
+    const field = Object.keys(err.keyValue || {})[0] || 'value';
+    return res.status(409).json({ message: `That ${field} already exists` });
   }
 
   console.error(err.stack);
@@ -134,3 +143,6 @@ const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+
+// 6acf486d5bc9cad1de0ab8f5 code.
