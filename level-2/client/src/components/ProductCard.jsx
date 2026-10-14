@@ -4,9 +4,11 @@ function ProductCard({ product, onDelete }) {
       <div className="avatar">{product.name.charAt(0)}</div>
       <h2>{product.name}</h2>
       <p className="price">${product.price}</p>
-      <button className="delete-btn" onClick={() => onDelete(product.id)}>
-        Delete
-      </button>
+      {onDelete && (
+        <button className="delete-btn" onClick={() => onDelete(product.id)}>
+          Delete
+        </button>
+      )}
     </article>
   )
 }

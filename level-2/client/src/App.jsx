@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import ProductCard from './components/ProductCard'
 import ProductForm from './components/ProductForm'
+import AuthForm from './components/AuthForm'
 
 function App() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
     async function loadProducts() {
@@ -25,10 +27,24 @@ function App() {
       }
     }
 
+    async function checkSession() {
+      try {
+        const response = await fetch('/auth/me')
+
+        if (response.ok) {
+          const data = await response.json()
+          setUser(data.user)
+        }
+      } catch {
+        // server unreachable: stay logged out
+      }
+    }
+
     loadProducts()
+    checkSession()
   }, [])
 
-    function handleAdd(newProduct) {
+  function handleAdd(newProduct) {
     setProducts([...products, newProduct])
   }
 
@@ -46,6 +62,11 @@ function App() {
     }
   }
 
+  async function handleLogout() {
+    await fetch('/auth/logout', { method: 'POST' })
+    setUser(null)
+  }
+
   return (
     <>
       <header>
@@ -53,7 +74,21 @@ function App() {
         <p>Built with React</p>
       </header>
       <main>
-        <ProductForm onAdd={handleAdd} />
+        {user ? (
+          <>
+            <div className="user-bar">
+              <p>
+                Logged in as <strong>{user.name}</strong> ({user.role})
+              </p>
+              <button className="logout-btn" onClick={handleLogout}>
+                Log out
+              </button>
+            </div>
+            <ProductForm onAdd={handleAdd} />
+          </>
+        ) : (
+          <AuthForm onAuth={setUser} />
+        )}
         <section id="product-list">
           {loading && <p className="message">Loading products...</p>}
           {error && <p className="message error">{error}</p>}
@@ -61,7 +96,11 @@ function App() {
             <p className="message">No products yet.</p>
           )}
           {products.map(product => (
-            <ProductCard key={product.id} product={product} onDelete={handleDelete} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              onDelete={user?.role === 'admin' ? handleDelete : null}
+            />
           ))}
         </section>
       </main>

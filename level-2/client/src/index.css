@@ -178,6 +178,28 @@ button {
   }
 }
 
+.link-btn {
+  background: none;
+  color: var(--primary);
+  margin-top: 0.75rem;
+  text-decoration: underline;
+}
+
+.user-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.logout-btn {
+  padding: 0.5rem 1rem;
+  background: #e5e7eb;
+  color: var(--text);
+}
+
 /* .form-section {
   margin-bottom: 2rem;
 } */
