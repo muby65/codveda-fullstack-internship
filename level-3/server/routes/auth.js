@@ -1,5 +1,3 @@
-const { protect } = require('../middleware/auth');
-
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
@@ -58,8 +56,23 @@ router.post('/logout', (req, res) => {
   res.clearCookie('token').json({ message: 'Logged out' });
 });
 
-router.get('/me', protect, (req, res) => {
-  res.json({ user: req.user });
+router.get('/me', async (req, res, next) => {
+  try {
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res.json({ user: null });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    res.json({ user: user || null });
+  } catch (err) {
+    if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+      return res.json({ user: null });
+    }
+    next(err);
+  }
 });
 
 module.exports = router;
